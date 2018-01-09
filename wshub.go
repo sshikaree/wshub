@@ -28,15 +28,13 @@ type WSHub struct {
 	// Unregister chan *wswrapper.WrappedConn
 }
 
-// Send message to all registered websocket connections
+// SendBroadcast sends message to all registered websocket connections
 func (hub *WSHub) SendBroadcast(messageType int, msg []byte) {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 	for conn := range hub.connections {
-		// log.Println("Sending to ws connection")
 		// _, err := conn.Write(msg)
 		err := conn.WriteMessage(messageType, msg)
-		// log.Println("DONE")
 		if err != nil {
 			log.Println(err)
 			delete(hub.connections, conn)
@@ -45,27 +43,28 @@ func (hub *WSHub) SendBroadcast(messageType int, msg []byte) {
 	}
 }
 
-// Add websocket connection to hub
+// Register adds websocket connection to hub
 func (hub *WSHub) Register(conn *websocket.Conn) {
 	hub.mu.Lock()
 	hub.connections[conn] = true
 	hub.mu.Unlock()
 }
 
-// Remove websocket connection from hub
+// Unregister removes websocket connection from hub
 func (hub *WSHub) Unregister(conn *websocket.Conn) {
 	hub.mu.Lock()
 	delete(hub.connections, conn)
 	hub.mu.Unlock()
 }
 
-// Returns nubmber of active connections
+// Len returns nubmber of active connections
 func (hub *WSHub) Len() int {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 	return len(hub.connections)
 }
 
+// NewWSHub creates new websocket pool
 func NewWSHub() *WSHub {
 	hub := new(WSHub)
 	hub.connections = make(map[*websocket.Conn]bool)
